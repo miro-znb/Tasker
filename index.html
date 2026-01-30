@@ -36,4 +36,13 @@
         // 1. Загрузка задач при старте
         async function loadTasks() {
             try {
-                let
+                let response = await fetch(`${API_URL}/api/get_tasks?user_id=${userId}`);
+                let tasks = await response.json();
+                let list = document.getElementById('taskList');
+                list.innerHTML = ""; // Очищаем список
+                tasks.forEach(task => renderTask(task));
+            } catch (error) {
+                console.error(error);
+                alert("Ошибка связи с сервером! Проверь, запущен ли cloudflared.");
+            }
+        }
