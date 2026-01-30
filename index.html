@@ -403,6 +403,13 @@
     const getApiUrl = () => (localStorage.getItem('api_url') || '').trim();
     const setApiUrl = (v) => localStorage.setItem('api_url', (v || '').trim());
 
+    // auto-set API from ?api=... (so user doesn't need to type it)
+    try{
+      const p = new URLSearchParams(window.location.search);
+      const fromQuery = (p.get('api') || '').trim();
+      if (fromQuery) setApiUrl(fromQuery);
+    }catch{}
+
     let API_URL = getApiUrl() || "http://localhost:8000";
     let BOT_USERNAME = null;
 
