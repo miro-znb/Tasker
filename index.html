@@ -1,837 +1,729 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Task Bot</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    :root{
-      --bg: var(--tg-theme-bg-color, #0b0f17);
-      --text: var(--tg-theme-text-color, #e8eefc);
-      --hint: var(--tg-theme-hint-color, rgba(232,238,252,.65));
-      --button: var(--tg-theme-button-color, #2e6bff);
-      --buttonText: var(--tg-theme-button-text-color, #ffffff);
-      --secondary: var(--tg-theme-secondary-bg-color, rgba(255,255,255,.06));
-      --danger: #ff3b30;
-      --ok: #34c759;
-      --radius: 16px;
-      --shadow: 0 10px 28px rgba(0,0,0,.35);
-    }
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1000px 600px at 20% -10%, rgba(46,107,255,.35), transparent 60%),
-                  radial-gradient(900px 500px at 100% 0%, rgba(52,199,89,.22), transparent 55%),
-                  var(--bg);
-      color: var(--text);
-    }
-    .wrap{ padding:16px 14px 90px; max-width: 980px; margin: 0 auto; }
-    .top{
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
-      margin: 10px 0 14px;
-    }
-    .brand{
-      display:flex; flex-direction:column; gap:2px;
-    }
-    .brand .title{ font-weight: 750; letter-spacing:.2px; font-size: 18px; }
-    .brand .sub{ font-size: 12px; color: var(--hint); }
-    .pill{
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.06);
-      padding: 8px 10px;
-      border-radius: 999px;
-      display:flex; align-items:center; gap:8px;
-      box-shadow: var(--shadow);
-    }
-    .pill small{ color: var(--hint); }
-    .grid{ display:grid; gap:12px; }
-    @media (min-width: 820px){
-      .grid.cols2{ grid-template-columns: 1.2fr .8fr; }
-    }
-    .card{
-      border-radius: var(--radius);
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .card .hd{
-      padding: 14px 14px 10px;
-      display:flex; align-items:center; justify-content:space-between;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      backdrop-filter: blur(8px);
-    }
-    .card .hd .h{ font-weight: 700; }
-    .card .bd{ padding: 14px; }
-    .muted{ color: var(--hint); }
-    .row{ display:flex; gap:10px; align-items:center; }
-    .row.grow > *:first-child{ flex: 1; }
-    input, select, textarea{
-      width:100%;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(0,0,0,.18);
-      color: var(--text);
-      padding: 12px 12px;
-      outline:none;
-    }
-    textarea{ min-height: 84px; resize: vertical; }
-    input::placeholder{ color: rgba(232,238,252,.5); }
-    button{
-      border-radius: 12px;
-      border: 0;
-      background: var(--button);
-      color: var(--buttonText);
-      padding: 11px 14px;
-      font-weight: 650;
-      cursor:pointer;
-    }
-    button.secondary{
-      background: rgba(255,255,255,.10);
-      border: 1px solid rgba(255,255,255,.12);
-      color: var(--text);
-    }
-    button.danger{ background: rgba(255,59,48,.14); border: 1px solid rgba(255,59,48,.35); color: #ffd4d1; }
-    button:disabled{ opacity:.55; cursor:not-allowed; }
-    .tabs{
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      padding: 10px 10px 12px;
-      background: rgba(10,14,22,.75);
-      border-top: 1px solid rgba(255,255,255,.10);
-      backdrop-filter: blur(12px);
-    }
-    .tabs .bar{
-      max-width: 980px; margin: 0 auto;
-      display:grid; grid-template-columns: repeat(5, 1fr);
-      gap: 8px;
-    }
-    .tab{
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.10);
-      color: var(--text);
-      padding: 10px 8px;
-      border-radius: 14px;
-      font-weight: 650;
-      text-align:center;
-      user-select:none;
-    }
-    .tab.active{
-      background: rgba(46,107,255,.20);
-      border-color: rgba(46,107,255,.45);
-      box-shadow: 0 10px 22px rgba(46,107,255,.16);
-    }
-    ul.clean{ list-style:none; padding:0; margin:0; display:grid; gap:10px; }
-    .item{
-      background: rgba(0,0,0,.12);
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 14px;
-      padding: 12px 12px;
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-    }
-    .item .left{ display:flex; align-items:center; gap:10px; min-width:0; }
-    .check{
-      width: 22px; height: 22px; border-radius: 8px;
-      border: 1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.06);
-      display:grid; place-items:center;
-      flex: 0 0 auto;
-    }
-    .check.on{ background: rgba(52,199,89,.18); border-color: rgba(52,199,89,.45); }
-    .item .txt{ font-weight: 650; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .item .meta{ font-size: 12px; color: var(--hint); }
-    .badge{
-      font-size: 12px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.08);
-      color: var(--text);
-      white-space:nowrap;
-    }
-    .toast{
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 86px;
-      background: rgba(0,0,0,.55);
-      border: 1px solid rgba(255,255,255,.12);
-      color: var(--text);
-      padding: 10px 12px;
-      border-radius: 14px;
-      max-width: min(92vw, 560px);
-      display:none;
-      backdrop-filter: blur(10px);
-    }
-    .cal{
-      display:grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 8px;
-    }
-    .cal .d{
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 14px;
-      padding: 10px 8px;
-      min-height: 56px;
-      display:flex; flex-direction:column; gap:6px;
-      cursor:pointer;
-    }
-    .cal .d .n{ font-weight: 750; font-size: 12px; color: var(--hint); }
-    .dots{ display:flex; gap:6px; flex-wrap:wrap; }
-    .dot{ width: 8px; height: 8px; border-radius: 99px; }
-    .dot.tasks{ background: rgba(46,107,255,.95); }
-    .dot.habits{ background: rgba(52,199,89,.95); }
-    .sep{ height: 1px; background: rgba(255,255,255,.08); margin: 12px 0; }
-    a{ color: var(--text); }
-    code{ background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.10); padding: 2px 6px; border-radius: 8px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Task Bot Premium</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f1115;
+            --card-bg: rgba(30, 35, 45, 0.6);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary: #4f8aff;
+            --primary-gradient: linear-gradient(135deg, #4f8aff 0%, #2b62d9 100%);
+            --success: #00cca3;
+            --danger: #ff5252;
+            --text-main: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --glass: blur(16px);
+            --radius-L: 24px;
+            --radius-M: 16px;
+            --radius-S: 12px;
+            --anim-speed: 0.3s;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            padding-bottom: 100px; /* Space for bottom nav */
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%; left: -20%;
+            width: 140%; height: 140%;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(79, 138, 255, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 204, 163, 0.1) 0%, transparent 40%);
+            z-index: -1;
+            animation: float 20s infinite alternate ease-in-out;
+            pointer-events: none;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-20px, 20px); }
+        }
+
+        /* Typography */
+        h1, h2, h3 { margin: 0; font-weight: 600; }
+        .h1 { font-size: 28px; letter-spacing: -0.5px; }
+        .h2 { font-size: 20px; }
+        .sub { font-size: 14px; color: var(--text-secondary); font-weight: 400; }
+
+        /* Components */
+        .container {
+            padding: 20px 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-top: 10px;
+        }
+
+        .workspace-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            padding: 6px 12px;
+            border-radius: 50px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(5px);
+        }
+        .status-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+        }
+        .status-dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-L);
+            padding: 20px;
+            margin-bottom: 16px;
+            backdrop-filter: var(--glass);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .card:active { transform: scale(0.98); }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-M);
+            padding: 14px 16px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            background: rgba(0,0,0,0.3);
+        }
+
+        button {
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: #fff;
+            padding: 14px 20px;
+            border-radius: var(--radius-M);
+            width: 100%;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(79, 138, 255, 0.3);
+        }
+        .btn-primary:active { transform: scale(0.96); opacity: 0.9; }
+
+        .btn-icon {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.05);
+            color: var(--text-main);
+        }
+        .btn-sm { padding: 8px 16px; border-radius: 10px; font-size: 13px; }
+        .btn-secondary { background: rgba(255,255,255,0.08); color: #fff; }
+
+        /* Task List */
+        .task-list { list-style: none; padding: 0; margin: 0; }
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .task-item:last-child { border-bottom: none; }
+        
+        .checkbox {
+            width: 24px; height: 24px;
+            border-radius: 8px;
+            border: 2px solid rgba(255,255,255,0.3);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+        .checkbox.checked {
+            background: var(--success);
+            border-color: var(--success);
+        }
+        .checkbox path { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 20; stroke-dashoffset: 20; transition: stroke-dashoffset 0.3s; }
+        .checkbox.checked path { stroke-dashoffset: 0; }
+
+        .task-text { flex-grow: 1; font-size: 16px; transition: opacity 0.2s; }
+        .task-text.done { text-decoration: line-through; color: var(--text-secondary); }
+
+        .delete-btn {
+            color: var(--danger);
+            background: rgba(255, 82, 82, 0.1);
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 400px;
+            background: rgba(20, 24, 33, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            color: var(--text-secondary);
+            font-size: 10px;
+            gap: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 60px;
+        }
+
+        .nav-item svg { width: 24px; height: 24px; fill: currentColor; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item.active svg { fill: var(--primary); transform: translateY(-2px); }
+
+        /* Views */
+        .view-section { display: none; animation: fadeIn var(--anim-speed) ease; }
+        .view-section.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(255,255,255,0.95);
+            color: #000;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 500;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .toast.visible {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Calendar */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-top: 16px;
+        }
+        .cal-day {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            position: relative;
+        }
+        .cal-dot {
+            width: 4px; height: 4px; border-radius: 50%; margin-top: 4px;
+        }
+        .cal-dot.task { background: var(--primary); }
+        .cal-dot.habit { background: var(--success); }
+
+        /* Progress Circle */
+        .progress-card {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .progress-circle {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: conic-gradient(var(--primary) calc(var(--percent) * 1%), rgba(255,255,255,0.1) 0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .progress-circle::before {
+            content:'';
+            position: absolute;
+            width: 88%; height: 88%;
+            background: #151921;
+            border-radius: 50%;
+        }
+        .progress-val { position: relative; font-weight: 700; font-size: 18px; }
+
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div class="brand">
-        <div class="title">Task Bot</div>
-        <div class="sub">Задачи • Привычки • Календарь • Прогресс • Общее</div>
-      </div>
-      <div class="pill">
-        <small id="pillWs">...</small>
-        <span class="badge" id="pillStatus">offline</span>
-      </div>
+
+    <div class="toast" id="toast">Notification</div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1 class="h1">Мой День</h1>
+                <div class="sub">Вся твоя продуктивность здесь</div>
+            </div>
+            <div class="workspace-pill">
+                <span class="status-dot" id="wsStatus"></span>
+                <span id="wsName">Личное</span>
+            </div>
+        </div>
+
+        <!-- TASKS VIEW -->
+        <div id="view-tasks" class="view-section active">
+            
+            <div class="card">
+                <h2 class="h2" style="margin-bottom: 16px;">Добавить задачу</h2>
+                <div class="input-group">
+                    <input type="text" id="taskInput" placeholder="Что нужно сделать?" />
+                </div>
+                <button class="btn-primary" id="btnAddTask">Добавить</button>
+            </div>
+
+            <div class="card" style="padding: 10px 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 10px;">
+                    <span class="sub">Список дел</span>
+                    <span class="sub" id="taskCount">0 задач</span>
+                </div>
+                <ul class="task-list" id="taskList">
+                    <!-- Tasks injected here -->
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2 class="h2">Напоминание</h2>
+                <div class="sub" style="margin-bottom: 12px;">Бот пришлет сообщение в ЛС</div>
+                <input id="remindMsg" placeholder="О чем напомнить?" style="margin-bottom:12px;">
+                <input id="remindAt" type="datetime-local" style="margin-bottom:12px;">
+                <button class="btn-primary btn-secondary" id="btnAddReminder">Создать</button>
+            </div>
+
+        </div>
+
+        <!-- HABITS VIEW -->
+        <div id="view-habits" class="view-section">
+            <div class="card">
+                <h2 class="h2">Новая привычка</h2>
+                <div class="input-group" style="margin-top: 12px;">
+                    <input id="habitTitle" placeholder="Название (например: Бег)" />
+                </div>
+                <div class="input-group">
+                    <input id="habitTarget" type="number" value="1" placeholder="Цель в день" />
+                </div>
+                <button class="btn-primary" id="btnAddHabit">Создать трекер</button>
+            </div>
+
+            <div class="card">
+                <h2 class="h2" style="margin-bottom: 16px;">Мои привычки</h2>
+                <ul class="task-list" id="habitList">
+                    <!-- Habits injected here -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- CALENDAR VIEW -->
+        <div id="view-calendar" class="view-section">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <button class="btn-icon" id="btnPrevMonth">←</button>
+                    <span class="h2" id="monthLabel">...</span>
+                    <button class="btn-icon" id="btnNextMonth">→</button>
+                </div>
+                <div class="calendar-grid" id="calGrid"></div>
+                <div style="margin-top: 20px; text-align: center; color: var(--text-secondary);" id="calDetails">
+                    Нажми на день для деталей
+                </div>
+            </div>
+        </div>
+
+        <!-- SHARED VIEW -->
+        <div id="view-shared" class="view-section">
+            <div class="card">
+                <h2 class="h2" style="margin-bottom:8px;">Пространства</h2>
+                <div class="sub" style="margin-bottom:16px;">Выбери группу для совместной работы</div>
+                <ul class="task-list" id="wsList"></ul>
+                <div style="margin-top:16px; display:flex; gap:10px;">
+                    <input id="wsTitle" placeholder="Название..." />
+                    <button class="btn-primary btn-sm" style="width:auto;" id="btnCreateWs">New</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="h2">Приглашения</h2>
+                <button class="btn-primary btn-secondary" id="btnCreateInvite" style="margin: 12px 0;">Создать ссылку-инвайт</button>
+                <div id="inviteOut" style="word-break: break-all; font-family: monospace; font-size: 12px; color: var(--primary);"></div>
+                
+                <div style="height:1px; background:var(--card-border); margin:16px 0;"></div>
+                
+                <div class="sub">Вступить по токену</div>
+                <div style="display:flex; gap:10px; margin-top:8px;">
+                    <input id="joinToken" placeholder="Токен..." />
+                    <button class="btn-primary btn-sm" style="width:auto;" id="btnJoin">Join</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="sub">API Setting (Debug)</div>
+                 <div style="display:flex; gap:10px; margin-top:5px;">
+                    <input id="apiUrl" placeholder="https://..." style="font-size:12px;" />
+                    <button class="btn-primary btn-sm" style="width:auto;" id="btnSaveApi">Save</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <div id="viewTasks" class="view">
-      <div class="grid cols2">
-        <div class="card">
-          <div class="hd">
-            <div class="h">Задачник</div>
-            <div class="badge" id="tasksCount">0</div>
-          </div>
-          <div class="bd">
-            <div class="row grow">
-              <input id="taskInput" placeholder="Добавь задачу…" />
-              <button id="btnAddTask">Добавить</button>
-            </div>
-            <div class="sep"></div>
-            <ul class="clean" id="taskList"></ul>
-          </div>
+    <!-- Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchView('tasks', this)">
+            <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+            <span>Задачи</span>
         </div>
-
-        <div class="card">
-          <div class="hd"><div class="h">Автоматизация</div></div>
-          <div class="bd">
-            <div class="muted">Напоминания и автозадачи работают через серверный планировщик.</div>
-            <div class="sep"></div>
-
-            <div class="muted" style="margin-bottom:8px;">Напоминание</div>
-            <div class="row" style="gap:10px; margin-bottom:10px;">
-              <input id="remindMsg" placeholder="Текст напоминания" />
-            </div>
-            <div class="row" style="gap:10px; margin-bottom:10px;">
-              <input id="remindAt" type="datetime-local" />
-              <button class="secondary" id="btnAddReminder">Создать</button>
-            </div>
-
-            <div class="sep"></div>
-
-            <div class="muted" style="margin-bottom:8px;">Автозадача (каждый день)</div>
-            <div class="row" style="gap:10px; margin-bottom:10px;">
-              <input id="autoText" placeholder="Например: Выпить воды 2л" />
-            </div>
-            <div class="row" style="gap:10px;">
-              <input id="autoTime" type="time" value="09:00" />
-              <button class="secondary" id="btnAddAuto">Добавить</button>
-            </div>
-            <div class="muted" id="autoHint" style="margin-top:10px;"></div>
-          </div>
+        <div class="nav-item" onclick="switchView('habits', this)">
+            <svg viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor"/></svg>
+            <span>Привычки</span>
         </div>
-      </div>
+        <div class="nav-item" onclick="switchView('calendar', this)">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2" fill="none"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/></svg>
+            <span>Календарь</span>
+        </div>
+        <div class="nav-item" onclick="switchView('shared', this)">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+            <span>Общее</span>
+        </div>
     </div>
 
-    <div id="viewHabits" class="view" style="display:none;">
-      <div class="grid cols2">
-        <div class="card">
-          <div class="hd"><div class="h">Трекер привычек</div><div class="badge" id="habitsCount">0</div></div>
-          <div class="bd">
-            <div class="row grow">
-              <input id="habitTitle" placeholder="Новая привычка…" />
-              <button id="btnAddHabit">Создать</button>
-            </div>
-            <div class="row" style="margin-top:10px; gap:10px;">
-              <input id="habitTarget" type="number" min="1" value="1" />
-              <span class="muted" style="white-space:nowrap;">цель/день</span>
-            </div>
-            <div class="sep"></div>
-            <ul class="clean" id="habitList"></ul>
-          </div>
-        </div>
+    <script>
+        // --- LOGIC ---
+        const tg = window.Telegram?.WebApp;
+        if (tg) tg.expand();
 
-        <div class="card">
-          <div class="hd"><div class="h">Сегодня</div></div>
-          <div class="bd">
-            <div class="muted">Нажми “+1”, чтобы отметить выполнение за сегодня. Стрик считается автоматически.</div>
-            <div class="sep"></div>
-            <div class="muted">Дата: <span id="todayLabel"></span></div>
-          </div>
-        </div>
-      </div>
-    </div>
+        // Utils
+        const showToast = (msg) => {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('visible');
+            setTimeout(() => el.classList.remove('visible'), 3000);
+        };
 
-    <div id="viewCalendar" class="view" style="display:none;">
-      <div class="card">
-        <div class="hd">
-          <div class="h">Календарь</div>
-          <div class="row" style="gap:8px;">
-            <button class="secondary" id="btnPrevMonth">◀</button>
-            <span class="badge" id="monthLabel">...</span>
-            <button class="secondary" id="btnNextMonth">▶</button>
-          </div>
-        </div>
-        <div class="bd">
-          <div class="cal" id="calGrid"></div>
-          <div class="sep"></div>
-          <div class="muted" id="calDetails">Выбери день.</div>
-        </div>
-      </div>
-    </div>
+        let API_URL = localStorage.getItem('api_url') || "http://localhost:8000";
+        // Auto-detect from ?api=...
+        try{
+            const p = new URLSearchParams(window.location.search);
+            const fromQuery = p.get('api');
+            if(fromQuery) {
+                API_URL = fromQuery;
+                localStorage.setItem('api_url', API_URL);
+            }
+        } catch{}
+        
+        document.getElementById('apiUrl').value = API_URL;
 
-    <div id="viewProgress" class="view" style="display:none;">
-      <div class="grid cols2">
-        <div class="card">
-          <div class="hd"><div class="h">Прогресс</div></div>
-          <div class="bd">
-            <div class="row" style="gap:10px; flex-wrap:wrap;">
-              <span class="badge" id="pTasks">Задачи: …</span>
-              <span class="badge" id="pDone">Выполнено: …</span>
-              <span class="badge" id="pDays">Активных дней: …</span>
-            </div>
-            <div class="sep"></div>
-            <div class="muted">Стрики по привычкам:</div>
-            <ul class="clean" id="progressHabits"></ul>
-          </div>
-        </div>
-        <div class="card">
-          <div class="hd"><div class="h">Советы</div></div>
-          <div class="bd">
-            <div class="muted">
-              - Делай маленькие задачи каждый день — это быстрее строит “активные дни”.<br/>
-              - Для автозадач используй одно короткое предложение.<br/>
-              - Напоминания отправляются ботом в личку.
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+        let currentWorkspaceId = localStorage.getItem('ws_id') ? Number(localStorage.getItem('ws_id')) : null;
+        let monthCursor = new Date();
 
-    <div id="viewShared" class="view" style="display:none;">
-      <div class="grid cols2">
-        <div class="card">
-          <div class="hd"><div class="h">Общие пространства</div></div>
-          <div class="bd">
-            <div class="muted">Выбери пространство — и задачи/привычки будут общими.</div>
-            <div class="sep"></div>
-            <ul class="clean" id="wsList"></ul>
-            <div class="sep"></div>
-            <div class="row grow">
-              <input id="wsTitle" placeholder="Название пространства…" />
-              <button class="secondary" id="btnCreateWs">Создать</button>
-            </div>
-          </div>
-        </div>
+        const api = async (path, body=null) => {
+            const url = new URL(API_URL.replace(/\/$/, '') + path);
+            const headers = { 'Content-Type': 'application/json' };
+            if (tg?.initData) headers['X-Telegram-Init-Data'] = tg.initData;
+            
+            try {
+                const opts = {
+                    method: body ? 'POST' : 'GET',
+                    headers,
+                    body: body ? JSON.stringify(body) : undefined
+                };
+                const res = await fetch(url, opts);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Server error');
+                return data;
+            } catch (e) {
+                document.getElementById('wsStatus').classList.remove('online');
+                showToast(e.message);
+                throw e;
+            }
+        };
 
-        <div class="card">
-          <div class="hd"><div class="h">Приглашения</div></div>
-          <div class="bd">
-            <div class="muted">Создай инвайт и отправь другу ссылку.</div>
-            <div class="sep"></div>
-            <div class="row" style="gap:10px;">
-              <button class="secondary" id="btnCreateInvite">Сделать ссылку</button>
-              <span class="badge" id="inviteWs">ws: —</span>
-            </div>
-            <div class="muted" style="margin-top:10px;" id="inviteOut"></div>
-            <div class="sep"></div>
-            <div class="muted">Ввести токен и присоединиться:</div>
-            <div class="row" style="gap:10px; margin-top:10px;">
-              <input id="joinToken" placeholder="token…" />
-              <button class="secondary" id="btnJoin">Join</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+        // Navigation
+        window.switchView = (viewName, navEl) => {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            navEl.classList.add('active');
 
-    <div class="card" style="margin-top:12px;">
-      <div class="hd"><div class="h">Настройки</div></div>
-      <div class="bd">
-        <div class="muted">URL сервера (нужно для GitHub Pages + cloudflared / хостинга)</div>
-        <div class="row grow" style="margin-top:10px;">
-          <input id="apiUrl" placeholder="https://xxxx.trycloudflare.com" />
-          <button class="secondary" id="btnSaveApi">Сохранить</button>
-        </div>
-        <div class="muted" style="margin-top:10px;">
-          Если открываешь в Telegram — авторизация идёт через <code>initData</code> автоматически.
-        </div>
-      </div>
-    </div>
-  </div>
+            if(viewName === 'tasks') refreshTasks();
+            if(viewName === 'habits') refreshHabits();
+            if(viewName === 'calendar') refreshCalendar();
+            if(viewName === 'shared') refreshShared();
+        };
 
-  <div class="tabs">
-    <div class="bar">
-      <div class="tab active" data-tab="Tasks">Задачи</div>
-      <div class="tab" data-tab="Habits">Привычки</div>
-      <div class="tab" data-tab="Calendar">Календарь</div>
-      <div class="tab" data-tab="Progress">Прогресс</div>
-      <div class="tab" data-tab="Shared">Общее</div>
-    </div>
-  </div>
+        // Tasks
+        const refreshTasks = async () => {
+            try {
+                const qs = currentWorkspaceId ? `?workspace_id=${currentWorkspaceId}` : '';
+                const tasks = await api('/api/get_tasks' + qs);
+                document.getElementById('wsStatus').classList.add('online');
+                
+                const list = document.getElementById('taskList');
+                list.innerHTML = '';
+                document.getElementById('taskCount').textContent = `${tasks.length} задач`;
 
-  <div class="toast" id="toast"></div>
+                tasks.forEach(t => {
+                    const li = document.createElement('li');
+                    li.className = 'task-item';
+                    li.innerHTML = `
+                        <div class="checkbox ${t.done?'checked':''}" onclick="toggleTask(${t.id}, ${!t.done})">
+                            <svg width="14" height="14" viewBox="0 0 24 24"><path d="M20 6L9 17L4 12"/></svg>
+                        </div>
+                        <div class="task-text ${t.done?'done':''}">${t.text}</div>
+                        <div class="delete-btn" onclick="deleteTask(${t.id})">×</div>
+                    `;
+                    list.appendChild(li);
+                });
+            } catch {}
+        };
 
-  <script>
-    const tg = window.Telegram?.WebApp;
-    if (tg) tg.expand();
+        window.toggleTask = async (id, done) => {
+            await api('/api/toggle_task', { id, done });
+            refreshTasks();
+        };
 
-    const toastEl = document.getElementById('toast');
-    const showToast = (msg) => {
-      toastEl.textContent = msg;
-      toastEl.style.display = 'block';
-      setTimeout(() => toastEl.style.display = 'none', 2600);
-    };
+        window.deleteTask = async (id) => {
+            if(confirm('Удалить?')) {
+                await api('/api/delete_task', { id });
+                refreshTasks();
+            }
+        };
 
-    const getApiUrl = () => (localStorage.getItem('api_url') || '').trim();
-    const setApiUrl = (v) => localStorage.setItem('api_url', (v || '').trim());
+        document.getElementById('btnAddTask').onclick = async () => {
+            const text = document.getElementById('taskInput').value.trim();
+            if(!text) return;
+            await api('/api/add_task', { text, workspace_id: currentWorkspaceId });
+            document.getElementById('taskInput').value = '';
+            refreshTasks();
+        };
 
-    // auto-set API from ?api=... (so user doesn't need to type it)
-    try{
-      const p = new URLSearchParams(window.location.search);
-      const fromQuery = (p.get('api') || '').trim();
-      if (fromQuery) setApiUrl(fromQuery);
-    }catch{}
+        // Habits
+        const refreshHabits = async () => {
+            const habits = await api('/api/habits');
+            const prog = await api('/api/progress'); // for streaks
+            const streakMap = new Map((prog.habits||[]).map(x=>[x.id, x.streak]));
 
-    let API_URL = getApiUrl() || "http://localhost:8000";
-    let BOT_USERNAME = null;
+            const list = document.getElementById('habitList');
+            list.innerHTML = '';
+            
+            habits.forEach(h => {
+                const streak = streakMap.get(h.id) || 0;
+                const li = document.createElement('li');
+                li.className = 'task-item';
+                li.innerHTML = `
+                   <div style="flex-grow:1;">
+                       <div style="font-weight:600;">${h.title}</div>
+                       <div class="sub">Цель: ${h.daily_target}/день • 🔥 ${streak} дн</div>
+                   </div>
+                   <button class="btn-primary btn-sm" style="width:auto;" onclick="logHabit(${h.id})">+1</button>
+                `;
+                list.appendChild(li);
+            });
+        };
 
-    let currentWorkspaceId = null;
-    let monthCursor = new Date(); // local, only for UI
+        document.getElementById('btnAddHabit').onclick = async () => {
+             const title = document.getElementById('habitTitle').value;
+             const daily_target = document.getElementById('habitTarget').value;
+             if(!title) return;
+             await api('/api/habits', { title, daily_target });
+             document.getElementById('habitTitle').value = '';
+             refreshHabits();
+        };
+        
+        window.logHabit = async (id) => {
+            const day = new Date().toISOString().slice(0,10);
+            const res = await api('/api/habits/log', { habit_id: id, day, delta: 1 });
+            showToast(`Отлично! Стрик: ${res.streak}`);
+            refreshHabits();
+        };
 
-    const apiFetch = async (path, { method = 'GET', body = undefined, qs = undefined } = {}) => {
-      API_URL = getApiUrl() || API_URL;
-      const url = new URL(API_URL.replace(/\/$/, '') + path);
-      if (qs) Object.entries(qs).forEach(([k, v]) => url.searchParams.set(k, String(v)));
+        // Calendar
+        const refreshCalendar = async () => {
+            const y = monthCursor.getFullYear();
+            const m = monthCursor.getMonth() + 1;
+            document.getElementById('monthLabel').textContent = `${y}-${String(m).padStart(2,'0')}`;
+            
+            const data = await api(`/api/calendar/month?year=${y}&month=${m}`);
+            const grid = document.getElementById('calGrid');
+            grid.innerHTML = '';
 
-      const headers = { 'Content-Type': 'application/json' };
-      if (tg?.initData) headers['X-Telegram-Init-Data'] = tg.initData;
+            data.forEach(d => {
+                const el = document.createElement('div');
+                el.className = 'cal-day';
+                el.innerHTML = `<span>${d.day.slice(-2)}</span>`;
+                
+                if(d.tasks_done > 0) el.innerHTML += `<div class="cal-dot task"></div>`;
+                if(d.habit_marks > 0) el.innerHTML += `<div class="cal-dot habit"></div>`;
+                
+                el.onclick = () => {
+                   document.getElementById('calDetails').innerHTML = 
+                   `<b>${d.day}</b><br>Задач: ${d.tasks_done}<br>Привычек: ${d.habit_marks}`;
+                };
+                grid.appendChild(el);
+            });
+        };
+        
+        document.getElementById('btnPrevMonth').onclick = () => {
+            monthCursor.setMonth(monthCursor.getMonth() - 1);
+            refreshCalendar();
+        };
+        document.getElementById('btnNextMonth').onclick = () => {
+            monthCursor.setMonth(monthCursor.getMonth() + 1);
+            refreshCalendar();
+        };
 
-      const res = await fetch(url.toString(), {
-        method,
-        headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
-      });
+        // Shared
+        const refreshShared = async () => {
+            const me = await api('/api/me');
+            const list = document.getElementById('wsList');
+            list.innerHTML = '';
+            
+            (me.workspaces || []).forEach(w => {
+                 const li = document.createElement('li');
+                 li.className = 'task-item';
+                 const isSel = w.id === currentWorkspaceId;
+                 li.innerHTML = `
+                    <div style="flex-grow:1">
+                        <div>${w.title}</div>
+                        <div class="sub">${w.role}</div>
+                    </div>
+                    ${isSel ? '<span style="color:var(--success); font-size:12px;">Выбрано</span>' : 
+                      `<button class="btn-primary btn-sm" style="width:auto; padding:4px 10px;" onclick="chooseWs(${w.id}, '${w.title}')">Open</button>`}
+                 `;
+                 list.appendChild(li);
+            });
+            
+            // update header pill
+            if(currentWorkspaceId && me.workspaces) {
+                const cur = me.workspaces.find(x => x.id === currentWorkspaceId);
+                if(cur) document.getElementById('wsName').textContent = cur.title;
+            }
+        };
 
-      const txt = await res.text();
-      let data = null;
-      try { data = txt ? JSON.parse(txt) : null; } catch { data = { raw: txt }; }
-      if (!res.ok) throw new Error(data?.error || data?.raw || res.statusText);
-      return data;
-    };
-
-    const setPill = (wsTitle, online) => {
-      document.getElementById('pillWs').textContent = wsTitle || '—';
-      document.getElementById('pillStatus').textContent = online ? 'online' : 'offline';
-    };
-
-    // Tabs
-    const views = {
-      Tasks: document.getElementById('viewTasks'),
-      Habits: document.getElementById('viewHabits'),
-      Calendar: document.getElementById('viewCalendar'),
-      Progress: document.getElementById('viewProgress'),
-      Shared: document.getElementById('viewShared'),
-    };
-
-    const showTab = async (name) => {
-      Object.entries(views).forEach(([k, el]) => el.style.display = (k === name ? '' : 'none'));
-      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
-
-      if (name === 'Tasks') await loadTasks();
-      if (name === 'Habits') await loadHabits();
-      if (name === 'Calendar') await loadCalendar();
-      if (name === 'Progress') await loadProgress();
-      if (name === 'Shared') await loadWorkspaces();
-    };
-
-    document.querySelectorAll('.tab').forEach(el => el.addEventListener('click', () => showTab(el.dataset.tab)));
-
-    // Settings
-    document.getElementById('apiUrl').value = getApiUrl();
-    document.getElementById('btnSaveApi').addEventListener('click', async () => {
-      setApiUrl(document.getElementById('apiUrl').value);
-      API_URL = getApiUrl() || API_URL;
-      showToast('Сохранено');
-      await bootstrap();
-    });
-
-    // Workspace state
-    const saveWorkspace = (id) => localStorage.setItem('workspace_id', String(id));
-    const loadWorkspace = () => {
-      const v = localStorage.getItem('workspace_id');
-      return v ? Number(v) : null;
-    };
-
-    // Tasks
-    const renderTask = (t) => {
-      const li = document.createElement('li');
-      li.className = 'item';
-
-      const left = document.createElement('div');
-      left.className = 'left';
-      const check = document.createElement('div');
-      check.className = 'check' + (t.done ? ' on' : '');
-      check.innerHTML = t.done ? '✓' : '';
-      const textWrap = document.createElement('div');
-      textWrap.style.minWidth = '0';
-      const txt = document.createElement('div');
-      txt.className = 'txt';
-      txt.textContent = t.text;
-      const meta = document.createElement('div');
-      meta.className = 'meta';
-      meta.textContent = t.done ? 'выполнено' : 'в процессе';
-      textWrap.appendChild(txt);
-      textWrap.appendChild(meta);
-      left.appendChild(check);
-      left.appendChild(textWrap);
-
-      const right = document.createElement('div');
-      right.className = 'row';
-      right.style.gap = '8px';
-
-      const btnDel = document.createElement('button');
-      btnDel.className = 'danger';
-      btnDel.textContent = 'Удалить';
-
-      btnDel.addEventListener('click', async () => {
-        await apiFetch('/api/delete_task', { method: 'POST', body: { id: t.id } });
-        showToast('Удалено');
-        await loadTasks();
-      });
-
-      check.addEventListener('click', async () => {
-        await apiFetch('/api/toggle_task', { method: 'POST', body: { id: t.id, done: !t.done } });
-        await loadTasks();
-      });
-
-      right.appendChild(btnDel);
-
-      li.appendChild(left);
-      li.appendChild(right);
-      return li;
-    };
-
-    const loadTasks = async () => {
-      try {
-        const qs = currentWorkspaceId ? { workspace_id: currentWorkspaceId } : undefined;
-        const tasks = await apiFetch('/api/get_tasks', { qs });
-        const list = document.getElementById('taskList');
-        list.innerHTML = '';
-        tasks.forEach(t => list.appendChild(renderTask(t)));
-        document.getElementById('tasksCount').textContent = String(tasks.length);
-        setPill(document.getElementById('pillWs').textContent, true);
-      } catch (e) {
-        setPill('—', false);
-        showToast('Нет связи с сервером. Проверь API URL и сервер.');
-      }
-    };
-
-    document.getElementById('btnAddTask').addEventListener('click', async () => {
-      const input = document.getElementById('taskInput');
-      const text = input.value.trim();
-      if (!text) return;
-      await apiFetch('/api/add_task', { method: 'POST', body: { text, workspace_id: currentWorkspaceId } });
-      input.value = '';
-      await loadTasks();
-    });
-
-    // Habits
-    document.getElementById('todayLabel').textContent = new Date().toISOString().slice(0,10);
-    const renderHabit = (h) => {
-      const li = document.createElement('li');
-      li.className = 'item';
-
-      const left = document.createElement('div');
-      left.className = 'left';
-      const badge = document.createElement('div');
-      badge.className = 'badge';
-      badge.textContent = `стрик: ${h.streak ?? 0}д`;
-      const textWrap = document.createElement('div');
-      textWrap.style.minWidth = '0';
-      const txt = document.createElement('div');
-      txt.className = 'txt';
-      txt.textContent = h.title;
-      const meta = document.createElement('div');
-      meta.className = 'meta';
-      meta.textContent = `цель: ${h.daily_target}/день`;
-      textWrap.appendChild(txt);
-      textWrap.appendChild(meta);
-      left.appendChild(badge);
-      left.appendChild(textWrap);
-
-      const right = document.createElement('div');
-      right.className = 'row';
-      right.style.gap = '8px';
-      const btn = document.createElement('button');
-      btn.className = 'secondary';
-      btn.textContent = '+1';
-      btn.addEventListener('click', async () => {
-        const day = new Date().toISOString().slice(0,10);
-        const res = await apiFetch('/api/habits/log', { method: 'POST', body: { habit_id: h.id, day, delta: 1 } });
-        showToast(`Отмечено. Стрик: ${res.streak}д`);
-        await loadHabits();
-      });
-      right.appendChild(btn);
-
-      li.appendChild(left);
-      li.appendChild(right);
-      return li;
-    };
-
-    const loadHabits = async () => {
-      try {
-        const habits = await apiFetch('/api/habits');
-        // подмешаем стрики через /api/progress (одним запросом)
-        const prog = await apiFetch('/api/progress');
-        const streakMap = new Map((prog.habits || []).map(x => [x.id, x.streak || 0]));
-
-        const list = document.getElementById('habitList');
-        list.innerHTML = '';
-        habits.forEach(h => {
-          h.streak = streakMap.get(h.id) ?? 0;
-          list.appendChild(renderHabit(h));
-        });
-        document.getElementById('habitsCount').textContent = String(habits.length);
-      } catch (e) {
-        showToast('Не удалось загрузить привычки');
-      }
-    };
-
-    document.getElementById('btnAddHabit').addEventListener('click', async () => {
-      const title = document.getElementById('habitTitle').value.trim();
-      const daily_target = Number(document.getElementById('habitTarget').value || 1);
-      if (!title) return;
-      await apiFetch('/api/habits', { method: 'POST', body: { title, daily_target } });
-      document.getElementById('habitTitle').value = '';
-      await loadHabits();
-    });
-
-    // Calendar
-    const fmtMonth = (d) => {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      return `${y}-${m}`;
-    };
-
-    const loadCalendar = async () => {
-      const y = monthCursor.getFullYear();
-      const m = monthCursor.getMonth() + 1;
-      document.getElementById('monthLabel').textContent = fmtMonth(monthCursor);
-
-      const data = await apiFetch('/api/calendar/month', { qs: { year: y, month: m } });
-      const grid = document.getElementById('calGrid');
-      grid.innerHTML = '';
-
-      data.forEach(day => {
-        const cell = document.createElement('div');
-        cell.className = 'd';
-        const n = document.createElement('div');
-        n.className = 'n';
-        n.textContent = day.day.slice(-2);
-        const dots = document.createElement('div');
-        dots.className = 'dots';
-        if (day.tasks_done > 0) {
-          const dot = document.createElement('div');
-          dot.className = 'dot tasks';
-          dots.appendChild(dot);
+        window.chooseWs = (id, title) => {
+            currentWorkspaceId = id;
+            localStorage.setItem('ws_id', id);
+            document.getElementById('wsName').textContent = title;
+            refreshShared();
+            showToast('Пространство изменено');
         }
-        if (day.habit_marks > 0) {
-          const dot = document.createElement('div');
-          dot.className = 'dot habits';
-          dots.appendChild(dot);
+
+        document.getElementById('btnCreateWs').onclick = async () => {
+            const title = document.getElementById('wsTitle').value;
+            if(!title) return;
+            await api('/api/workspaces', { title });
+            document.getElementById('wsTitle').value = '';
+            refreshShared();
         }
-        cell.appendChild(n);
-        cell.appendChild(dots);
-        cell.addEventListener('click', () => {
-          document.getElementById('calDetails').textContent =
-            `${day.day}: задач выполнено ${day.tasks_done}, отметок привычек ${day.habit_marks}`;
-        });
-        grid.appendChild(cell);
-      });
-    };
+        
+        document.getElementById('btnCreateInvite').onclick = async () => {
+             if(!currentWorkspaceId) return showToast('Сначала выбери пространство');
+             const res = await api('/api/invites', { workspace_id: currentWorkspaceId });
+             let url = `https://t.me/Gogo_tasker_bot?start=${res.start_param}`; 
+             // Note: In real production, replace Gogo_tasker_bot with your bot username dynamically if possible
+             document.getElementById('inviteOut').innerHTML = `
+                <a href="${url}" style="color:var(--primary);">${url}</a>
+             `;
+        };
+        
+        document.getElementById('btnJoin').onclick = async () => {
+            const token = document.getElementById('joinToken').value;
+            if(!token) return;
+            await api('/api/join', { token });
+            showToast('Успешно!');
+            refreshShared();
+        };
 
-    document.getElementById('btnPrevMonth').addEventListener('click', async () => {
-      monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() - 1, 1);
-      await loadCalendar();
-    });
-    document.getElementById('btnNextMonth').addEventListener('click', async () => {
-      monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 1);
-      await loadCalendar();
-    });
+        document.getElementById('btnSaveApi').onclick = () => {
+            localStorage.setItem('api_url', document.getElementById('apiUrl').value);
+            location.reload();
+        }
+        
+        // Reminders
+        document.getElementById('btnAddReminder').onclick = async () => {
+             const message = document.getElementById('remindMsg').value;
+             let val = document.getElementById('remindAt').value;
+             if(!message || !val) return;
+             const remind_at = new Date(val).toISOString().replace('.000Z', 'Z');
+             await api('/api/reminders', { message, remind_at });
+             showToast('Напоминание установлено');
+             document.getElementById('remindMsg').value='';
+        };
 
-    // Progress
-    const loadProgress = async () => {
-      const p = await apiFetch('/api/progress');
-      document.getElementById('pTasks').textContent = `Задачи: ${p.total_tasks}`;
-      document.getElementById('pDone').textContent = `Выполнено: ${p.done_tasks}`;
-      document.getElementById('pDays').textContent = `Активных дней: ${p.active_days}`;
+        // Init
+        refreshTasks();
 
-      const list = document.getElementById('progressHabits');
-      list.innerHTML = '';
-      (p.habits || []).forEach(h => {
-        const li = document.createElement('li');
-        li.className = 'item';
-        const left = document.createElement('div');
-        left.className = 'left';
-        const b = document.createElement('div');
-        b.className = 'badge';
-        b.textContent = `${h.streak || 0}д`;
-        const t = document.createElement('div');
-        t.className = 'txt';
-        t.textContent = h.title;
-        left.appendChild(b);
-        left.appendChild(t);
-        li.appendChild(left);
-        list.appendChild(li);
-      });
-    };
-
-    // Shared / workspaces
-    const loadWorkspaces = async () => {
-      const me = await apiFetch('/api/me');
-      const ws = me.workspaces || [];
-
-      const list = document.getElementById('wsList');
-      list.innerHTML = '';
-
-      ws.forEach(w => {
-        const li = document.createElement('li');
-        li.className = 'item';
-        const left = document.createElement('div');
-        left.className = 'left';
-        const badge = document.createElement('div');
-        badge.className = 'badge';
-        badge.textContent = w.role;
-        const txt = document.createElement('div');
-        txt.className = 'txt';
-        txt.textContent = `${w.title}`;
-        left.appendChild(badge);
-        left.appendChild(txt);
-
-        const right = document.createElement('div');
-        right.className = 'row';
-        right.style.gap = '8px';
-        const btn = document.createElement('button');
-        btn.className = (currentWorkspaceId === w.id) ? '' : 'secondary';
-        btn.textContent = (currentWorkspaceId === w.id) ? 'Выбрано' : 'Выбрать';
-        btn.addEventListener('click', async () => {
-          currentWorkspaceId = w.id;
-          saveWorkspace(w.id);
-          document.getElementById('inviteWs').textContent = `ws: ${w.id}`;
-          document.getElementById('pillWs').textContent = w.title;
-          showToast('Пространство выбрано');
-          await loadTasks();
-          await loadWorkspaces();
-        });
-        right.appendChild(btn);
-
-        li.appendChild(left);
-        li.appendChild(right);
-        list.appendChild(li);
-      });
-    };
-
-    document.getElementById('btnCreateWs').addEventListener('click', async () => {
-      const title = document.getElementById('wsTitle').value.trim();
-      if (!title) return;
-      await apiFetch('/api/workspaces', { method: 'POST', body: { title } });
-      document.getElementById('wsTitle').value = '';
-      showToast('Создано');
-      await loadWorkspaces();
-    });
-
-    document.getElementById('btnCreateInvite').addEventListener('click', async () => {
-      if (!currentWorkspaceId) { showToast('Сначала выбери пространство'); return; }
-      const res = await apiFetch('/api/invites', { method: 'POST', body: { workspace_id: currentWorkspaceId, max_uses: 1, expires_in_hours: 72 } });
-      const startParam = res.start_param;
-      const token = res.token;
-      let link = null;
-      if (BOT_USERNAME) link = `https://t.me/${BOT_USERNAME}?start=${startParam}`;
-      const out = document.getElementById('inviteOut');
-      out.innerHTML = link
-        ? `Ссылка: <a href="${link}" target="_blank">${link}</a><br/>Токен: <code>${token}</code>`
-        : `Start param: <code>${startParam}</code><br/>Токен: <code>${token}</code>`;
-      showToast('Инвайт создан');
-    });
-
-    document.getElementById('btnJoin').addEventListener('click', async () => {
-      const token = document.getElementById('joinToken').value.trim();
-      if (!token) return;
-      await apiFetch('/api/join', { method: 'POST', body: { token } });
-      document.getElementById('joinToken').value = '';
-      showToast('Присоединился');
-      await loadWorkspaces();
-    });
-
-    // Reminders / auto
-    document.getElementById('btnAddReminder').addEventListener('click', async () => {
-      const message = document.getElementById('remindMsg').value.trim();
-      const dt = document.getElementById('remindAt').value; // local
-      if (!message || !dt) return;
-      const remind_at = new Date(dt).toISOString().replace('.000Z', 'Z');
-      await apiFetch('/api/reminders', { method: 'POST', body: { message, remind_at } });
-      document.getElementById('remindMsg').value = '';
-      document.getElementById('remindAt').value = '';
-      showToast('Напоминание создано');
-    });
-
-    document.getElementById('btnAddAuto').addEventListener('click', async () => {
-      const template_text = document.getElementById('autoText').value.trim();
-      const at_time = (document.getElementById('autoTime').value || '09:00').trim();
-      if (!template_text) return;
-      const res = await apiFetch('/api/auto_tasks', { method: 'POST', body: { template_text, schedule: 'daily', at_time } });
-      document.getElementById('autoText').value = '';
-      document.getElementById('autoHint').textContent = `Следующий запуск: ${res.next_run_at}`;
-      showToast('Автозадача добавлена');
-    });
-
-    // Bootstrap
-    const bootstrap = async () => {
-      try {
-        document.getElementById('pillStatus').textContent = '…';
-        const botInfo = await apiFetch('/api/bot');
-        BOT_USERNAME = botInfo.username;
-      } catch {}
-
-      try {
-        const prog = await apiFetch('/api/progress');
-        const stored = loadWorkspace();
-        currentWorkspaceId = stored || prog.workspace_id || null;
-        if (currentWorkspaceId) saveWorkspace(currentWorkspaceId);
-        document.getElementById('inviteWs').textContent = `ws: ${currentWorkspaceId ?? '—'}`;
-      } catch {}
-
-      try {
-        const me = await apiFetch('/api/me');
-        const ws = (me.workspaces || []).find(x => x.id === currentWorkspaceId) || (me.workspaces || [])[0];
-        document.getElementById('pillWs').textContent = ws ? ws.title : '—';
-        setPill(ws ? ws.title : '—', true);
-      } catch {
-        setPill('—', false);
-      }
-
-      await loadTasks();
-    };
-
-    bootstrap();
-  </script>
+    </script>
 </body>
 </html>
